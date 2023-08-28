@@ -2,9 +2,15 @@
   "name": "async-html-inline",
   "version": "1.0.0",
   "description": "asynchronously inline javascript, stylesheets, and images to an html page",
-  "type": "module",
+  "main": "async-html-inline.js",
+  "module": "async-html-inline.mjs",
+  "exports": {
+    ".": {
+      "require": "./async-html-inline.js",
+      "import": "./async-html-inline.mjs"
+    }
+  },
   "types": "async-html-inline.d.ts",
-  "main": "async-html-inline.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "example" : "cd example && node example-inline.js"

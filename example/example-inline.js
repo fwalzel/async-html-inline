@@ -1,4 +1,4 @@
-import { asyncHtmlInline } from '../async-html-inline.mjs';
+const { asyncHtmlInline } = require('../async-html-inline.js');
 
 (async function() {
   await asyncHtmlInline('input.html', 'output.html', []);

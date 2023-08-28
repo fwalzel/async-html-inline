@@ -1,8 +1,8 @@
-import fs from 'node:fs';
-import stream from 'node:stream';
-import util from 'util';
-import axios from 'axios';
-import mime from 'mime';
+const fs = require('node:fs');
+const stream = require('node:stream');
+const util = require('util');
+const axios = require('axios');
+const mime = require('mime');
 
 const pipeline = util.promisify(stream.pipeline);
 const readFileAsync = util.promisify(fs.readFile);
@@ -14,7 +14,7 @@ const readFileAsync = util.promisify(fs.readFile);
  * @param ignore
  * @returns {Promise<void>}
  */
-async function asyncHtmlInline (inputFilePath, outputFilePath, ignore = []) {
+async function asyncHtmlInline(inputFilePath, outputFilePath, ignore = []) {
   try {
     await pipeline(
       fs.createReadStream(inputFilePath, 'utf8'),
@@ -55,7 +55,7 @@ class TransformStream extends stream.Transform {
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
 
       if (imgSrcMatch) {
-        if (! this.ignore.includes('images')) {
+        if (!this.ignore.includes('images')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
           const imgSrc = imgSrcMatch[1];
@@ -65,7 +65,7 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (cssHrefMatch) {
-        if (! this.ignore.includes('stylesheets')) {
+        if (!this.ignore.includes('stylesheets')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -76,7 +76,7 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (jsSrcMatch) {
-        if (! this.ignore.includes('scripts')) {
+        if (!this.ignore.includes('scripts')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -121,8 +121,7 @@ class TransformStream extends stream.Transform {
         console.error('Error fetching resource: ', error);
         return '';
       }
-    }
-    else {
+    } else {
       try {
         return await readFileAsync(src, 'utf8');
       } catch (error) {
@@ -145,16 +144,14 @@ class TransformStream extends stream.Transform {
           const prefix = `data:${response.headers['content-type']};base64,`;
           return prefix + Buffer.from(response.data).toString('base64');
         }
-      }
-      catch (e) {
+      } catch (e) {
         console.error('Error fetching or converting image file: ', error);
         return '';
       }
-    }
-    else {
+    } else {
       try {
         const mimeType = mime.getType(imgSrc);
-        if (! mimeType.startsWith('image/')) {
+        if (!mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
           return '';
         }
@@ -169,4 +166,4 @@ class TransformStream extends stream.Transform {
   }
 }
 
-export { asyncHtmlInline };
+module.exports = { asyncHtmlInline };
