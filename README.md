@@ -69,7 +69,7 @@ renders to the output.html
 
 ### Exclusions
 
-You can ignore specific resources from being inlined by passing a third argument. Use an array with resources to be left out as it’s elements.
+You can ignore specific resources from being inlined by passing a third argument. Use an array with resources to be excluded as it’s elements.
 
 ```javascript
 const ignore = ['stylesheets', 'scripts'];
