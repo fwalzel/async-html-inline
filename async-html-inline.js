@@ -1,5 +1,6 @@
-const fs = require('node:fs');
-const stream = require('node:stream');
+const fs = require('fs');
+const stream = require('stream');
+const path = require('path');
 const util = require('util');
 const axios = require('axios');
 const mime = require('mime');
@@ -55,7 +56,7 @@ class TransformStream extends stream.Transform {
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
 
       if (imgSrcMatch) {
-        if (!this.ignore.includes('images')) {
+        if (! this.ignore.includes('images')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
           const imgSrc = imgSrcMatch[1];
@@ -65,7 +66,7 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (cssHrefMatch) {
-        if (!this.ignore.includes('stylesheets')) {
+        if (! this.ignore.includes('stylesheets')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -76,7 +77,7 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (jsSrcMatch) {
-        if (!this.ignore.includes('scripts')) {
+        if (! this.ignore.includes('scripts')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -123,7 +124,8 @@ class TransformStream extends stream.Transform {
       }
     } else {
       try {
-        return await readFileAsync(src, 'utf8');
+        const pathResolved = path.join(__dirname, src);
+        return await readFileAsync(pathResolved, 'utf8');
       } catch (error) {
         console.error('Error reading file: ', error);
         return '';
@@ -151,10 +153,12 @@ class TransformStream extends stream.Transform {
     } else {
       try {
         const mimeType = mime.getType(imgSrc);
-        if (!mimeType.startsWith('image/')) {
+        if (! mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
           return '';
         }
+        const pathResolved = path.join(__dirname, imgSrc);
+        return await readFileAsync(pathResolved);
         const imgData = await readFileAsync(imgSrc);
         const base64Image = Buffer.from(imgData).toString('base64');
         return `data:${mimeType};base64,${base64Image}`;
