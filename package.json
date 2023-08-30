@@ -23,12 +23,14 @@
     "html",
     "inline",
     "async",
-    "wait",
+    "await",
     "stylesheets",
     "scripts",
     "images",
     "assets",
-    "resources"
+    "resources",
+    "base64",
+    "typescript"
   ],
   "author": "Florian Walzel",
   "license": "MIT",
