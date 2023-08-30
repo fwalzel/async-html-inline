@@ -6,6 +6,7 @@ Can inline resources served from local environment and from external URLs. Uses 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build](https://github.com/fwalzel/async-html-inline/actions/workflows/node.js.yml/badge.svg)](https://github.com/fwalzel/async-html-inline/actions/workflows/node.js.yml/badge.svg)
+![Node.js Version](https://img.shields.io/badge/Node.js-16.x-green)
 
 ## Install
 
