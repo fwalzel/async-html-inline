@@ -1,11 +1,15 @@
-const fs = require('node:fs');
-const stream = require('node:stream');
+const fs = require('fs');
+const stream = require('stream');
+const path = require('path');
 const util = require('util');
 const axios = require('axios');
 const mime = require('mime');
 
 const pipeline = util.promisify(stream.pipeline);
 const readFileAsync = util.promisify(fs.readFile);
+
+
+
 
 /**
  *
@@ -18,7 +22,7 @@ async function asyncHtmlInline(inputFilePath, outputFilePath, ignore = []) {
   try {
     await pipeline(
       fs.createReadStream(inputFilePath, 'utf8'),
-      new TransformStream(ignore),
+      new TransformStream(ignore, inputFilePath),
       fs.createWriteStream(outputFilePath, 'utf8')
     );
     console.log('HTML modification completed.');
@@ -28,9 +32,10 @@ async function asyncHtmlInline(inputFilePath, outputFilePath, ignore = []) {
 }
 
 class TransformStream extends stream.Transform {
-  constructor(ignore, options) {
+  constructor(ignore, inputFilePath, options) {
     super(options);
     this.ignore = ignore;
+    this.absoluteHTMLPath = path.resolve(inputFilePath);
     this.buffer = '';
   }
 
@@ -55,7 +60,7 @@ class TransformStream extends stream.Transform {
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
 
       if (imgSrcMatch) {
-        if (!this.ignore.includes('images')) {
+        if (! this.ignore.includes('images')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
           const imgSrc = imgSrcMatch[1];
@@ -65,7 +70,7 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (cssHrefMatch) {
-        if (!this.ignore.includes('stylesheets')) {
+        if (! this.ignore.includes('stylesheets')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -76,7 +81,7 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (jsSrcMatch) {
-        if (!this.ignore.includes('scripts')) {
+        if (! this.ignore.includes('scripts')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -123,7 +128,8 @@ class TransformStream extends stream.Transform {
       }
     } else {
       try {
-        return await readFileAsync(src, 'utf8');
+        const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), src);
+        return await readFileAsync(pathResolved, 'utf8');
       } catch (error) {
         console.error('Error reading file: ', error);
         return '';
@@ -150,13 +156,20 @@ class TransformStream extends stream.Transform {
       }
     } else {
       try {
-        const mimeType = mime.getType(imgSrc);
-        if (!mimeType.startsWith('image/')) {
+        const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), imgSrc);
+        const mimeType = mime.getType(pathResolved);
+        console.log(mimeType);
+        if (! mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
           return '';
         }
-        const imgData = await readFileAsync(imgSrc);
+        console.log(pathResolved);
+        return await readFileAsync(pathResolved);
+        const imgData = await readFileAsync(imgSrc, 'utf8');
+        console.log("Image as UTF8:");
+        console.log(imgData);
         const base64Image = Buffer.from(imgData).toString('base64');
+        console.log(base64Image);
         return `data:${mimeType};base64,${base64Image}`;
       } catch (error) {
         console.error('Error reading file: ', error);
