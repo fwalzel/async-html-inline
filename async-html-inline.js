@@ -8,6 +8,9 @@ const mime = require('mime');
 const pipeline = util.promisify(stream.pipeline);
 const readFileAsync = util.promisify(fs.readFile);
 
+
+
+
 /**
  *
  * @param inputFilePath
@@ -19,7 +22,7 @@ async function asyncHtmlInline(inputFilePath, outputFilePath, ignore = []) {
   try {
     await pipeline(
       fs.createReadStream(inputFilePath, 'utf8'),
-      new TransformStream(ignore),
+      new TransformStream(ignore, inputFilePath),
       fs.createWriteStream(outputFilePath, 'utf8')
     );
     console.log('HTML modification completed.');
@@ -29,9 +32,10 @@ async function asyncHtmlInline(inputFilePath, outputFilePath, ignore = []) {
 }
 
 class TransformStream extends stream.Transform {
-  constructor(ignore, options) {
+  constructor(ignore, inputFilePath, options) {
     super(options);
     this.ignore = ignore;
+    this.absoluteHTMLPath = path.resolve(inputFilePath);
     this.buffer = '';
   }
 
@@ -124,7 +128,7 @@ class TransformStream extends stream.Transform {
       }
     } else {
       try {
-        const pathResolved = path.join(__dirname, src);
+        const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), src);
         return await readFileAsync(pathResolved, 'utf8');
       } catch (error) {
         console.error('Error reading file: ', error);
@@ -152,15 +156,20 @@ class TransformStream extends stream.Transform {
       }
     } else {
       try {
-        const mimeType = mime.getType(imgSrc);
+        const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), imgSrc);
+        const mimeType = mime.getType(pathResolved);
+        console.log(mimeType);
         if (! mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
           return '';
         }
-        const pathResolved = path.join(__dirname, imgSrc);
+        console.log(pathResolved);
         return await readFileAsync(pathResolved);
-        const imgData = await readFileAsync(imgSrc);
+        const imgData = await readFileAsync(imgSrc, 'utf8');
+        console.log("Image as UTF8:");
+        console.log(imgData);
         const base64Image = Buffer.from(imgData).toString('base64');
+        console.log(base64Image);
         return `data:${mimeType};base64,${base64Image}`;
       } catch (error) {
         console.error('Error reading file: ', error);

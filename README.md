@@ -7,6 +7,7 @@ Can inline resources served from local environment and from external URLs. Uses 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build](https://github.com/fwalzel/async-html-inline/actions/workflows/node.js.yml/badge.svg)](https://github.com/fwalzel/async-html-inline/actions/workflows/node.js.yml/badge.svg)
 ![Node.js Version](https://img.shields.io/badge/Node.js-16.x-green)
+[![Known Vulnerabilities](https://snyk.io/test/github/fwalzel/async-html-inline/badge.svg)](https://snyk.io/test/github/fwalzel/async-html-inline/badge.svg)
 
 ## Install
 
@@ -95,5 +96,5 @@ Happy Coding.
 
 ## License
 
-Copyright (c) 2023 Florian Walzel,
+Copyright (c) 2023–24 Florian Walzel,
 MIT License

@@ -16,6 +16,6 @@ const cli = async function(argv) {
 
   await asyncHtmlInline(input, output, ignore);
   console.log('\x1b[32m%s\x1b[0m', `Inlined, done, and ready! Your output is here: ${argv[3]}`);
-}
+};
 
 module.exports.cli = cli;
