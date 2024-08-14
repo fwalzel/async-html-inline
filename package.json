@@ -46,7 +46,7 @@
   },
   "homepage": "https://github.com/fwalzel/async-html-inline#readme",
   "dependencies": {
-    "axios": "^1.6.4",
+    "axios": "^1.7.4",
     "esm": "^3.2.25",
     "mime": "^3.0.0",
     "util": "^0.12.5"
