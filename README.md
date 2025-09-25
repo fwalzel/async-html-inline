@@ -96,5 +96,5 @@ Happy Coding.
 
 ## License
 
-Copyright (c) 2023–24 Florian Walzel,
+Copyright (c) 2023–25 Florian Walzel,
 MIT License
