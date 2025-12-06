@@ -3,7 +3,6 @@ const stream = require('stream');
 const path = require('path');
 const util = require('util');
 const axios = require('axios');
-const mime = require('mime');
 
 const pipeline = util.promisify(stream.pipeline);
 const readFileAsync = util.promisify(fs.readFile);
@@ -157,6 +156,7 @@ class TransformStream extends stream.Transform {
     } else {
       try {
         const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), imgSrc);
+        const { default: mime } = await import('mime');
         const mimeType = mime.getType(pathResolved);
         console.log(mimeType);
         if (! mimeType.startsWith('image/')) {
