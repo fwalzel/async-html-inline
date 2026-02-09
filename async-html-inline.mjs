@@ -44,7 +44,7 @@ class TransformStream extends stream.Transform {
    */
   async _transform(chunk, encoding, callback) {
     const data = this.buffer + chunk.toString();
-    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
+    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>|<object\s+[^>]*data="([^"]+)"[^>]*>[\s\S]*?<\/object>/gs;
     let lastIndex = 0;
     let match;
 
@@ -53,6 +53,7 @@ class TransformStream extends stream.Transform {
       const imgSrcMatch = tag.match(/<img[^>]*src="([^"]+)"[^>]*>/);
       const cssHrefMatch = tag.match(/href="([^"]+)"/);
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
+      const objectDataMatch = tag.match(/<object[^>]*data="([^"]+)"[^>]*>/);
 
       if (imgSrcMatch) {
         if (! this.ignore.includes('images')) {
@@ -62,6 +63,18 @@ class TransformStream extends stream.Transform {
           const imgData = await this.readAndConvertImage(imgSrc);
           if (imgData !== null) {
             this.push(`<img src="${imgData}" />`);
+          }
+        }
+      } else if (objectDataMatch) {
+        if (! this.ignore.includes('images')) {
+          this.push(data.slice(lastIndex, match.index));
+          lastIndex = regex.lastIndex;
+
+          const objectSrc = objectDataMatch[1];
+          const objectData = await this.readAndConvertImage(objectSrc);
+          if (objectData !== null) {
+            const inlinedTag = tag.replace(/data="[^"]*"/, `data="${objectData}"`);
+            this.push(inlinedTag);
           }
         }
       } else if (cssHrefMatch) {

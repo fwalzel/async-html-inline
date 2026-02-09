@@ -3,6 +3,7 @@ const stream = require('stream');
 const path = require('path');
 const util = require('util');
 const axios = require('axios');
+const mime = require('mime');
 
 const pipeline = util.promisify(stream.pipeline);
 const readFileAsync = util.promisify(fs.readFile);
@@ -48,7 +49,7 @@ class TransformStream extends stream.Transform {
    */
   async _transform(chunk, encoding, callback) {
     const data = this.buffer + chunk.toString();
-    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
+    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>|<object\s+[^>]*data="([^"]+)"[^>]*>[\s\S]*?<\/object>/gs;
     let lastIndex = 0;
     let match;
 
@@ -57,6 +58,7 @@ class TransformStream extends stream.Transform {
       const imgSrcMatch = tag.match(/<img[^>]*src="([^"]+)"[^>]*>/);
       const cssHrefMatch = tag.match(/href="([^"]+)"/);
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
+      const objectDataMatch = tag.match(/<object[^>]*data="([^"]+)"[^>]*>/);
 
       if (imgSrcMatch) {
         if (! this.ignore.includes('images')) {
@@ -66,6 +68,18 @@ class TransformStream extends stream.Transform {
           const imgData = await this.readAndConvertImage(imgSrc);
           if (imgData !== null) {
             this.push(`<img src="${imgData}" />`);
+          }
+        }
+      } else if (objectDataMatch) {
+        if (! this.ignore.includes('images')) {
+          this.push(data.slice(lastIndex, match.index));
+          lastIndex = regex.lastIndex;
+
+          const objectSrc = objectDataMatch[1];
+          const objectData = await this.readAndConvertImage(objectSrc);
+          if (objectData !== null) {
+            const inlinedTag = tag.replace(/data="[^"]*"/, `data="${objectData}"`);
+            this.push(inlinedTag);
           }
         }
       } else if (cssHrefMatch) {
@@ -156,20 +170,13 @@ class TransformStream extends stream.Transform {
     } else {
       try {
         const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), imgSrc);
-        const { default: mime } = await import('mime');
         const mimeType = mime.getType(pathResolved);
-        console.log(mimeType);
-        if (! mimeType.startsWith('image/')) {
+        if (! mimeType || ! mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
           return '';
         }
-        console.log(pathResolved);
-        return await readFileAsync(pathResolved);
-        const imgData = await readFileAsync(imgSrc, 'utf8');
-        console.log("Image as UTF8:");
-        console.log(imgData);
+        const imgData = await readFileAsync(pathResolved);
         const base64Image = Buffer.from(imgData).toString('base64');
-        console.log(base64Image);
         return `data:${mimeType};base64,${base64Image}`;
       } catch (error) {
         console.error('Error reading file: ', error);
