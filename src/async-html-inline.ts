@@ -1,14 +1,11 @@
-const fs = require('fs');
-const stream = require('stream');
-const path = require('path');
-const util = require('util');
-const axios = require('axios');
+import fs from 'node:fs';
+import stream from 'node:stream';
+import util from 'util';
+import axios from 'axios';
+import mime from 'mime';
 
 const pipeline = util.promisify(stream.pipeline);
 const readFileAsync = util.promisify(fs.readFile);
-
-
-
 
 /**
  *
@@ -17,11 +14,11 @@ const readFileAsync = util.promisify(fs.readFile);
  * @param ignore
  * @returns {Promise<void>}
  */
-async function asyncHtmlInline(inputFilePath, outputFilePath, ignore = []) {
+async function asyncHtmlInline (inputFilePath: string, outputFilePath: string, ignore: string[] = []): Promise<void> {
   try {
     await pipeline(
       fs.createReadStream(inputFilePath, 'utf8'),
-      new TransformStream(ignore, inputFilePath),
+      new TransformStream(ignore),
       fs.createWriteStream(outputFilePath, 'utf8')
     );
     console.log('HTML modification completed.');
@@ -31,10 +28,12 @@ async function asyncHtmlInline(inputFilePath, outputFilePath, ignore = []) {
 }
 
 class TransformStream extends stream.Transform {
-  constructor(ignore, inputFilePath, options) {
+  private ignore: string[];
+  private buffer: string;
+
+  constructor(ignore: string[], options?: stream.TransformOptions) {
     super(options);
     this.ignore = ignore;
-    this.absoluteHTMLPath = path.resolve(inputFilePath);
     this.buffer = '';
   }
 
@@ -46,7 +45,7 @@ class TransformStream extends stream.Transform {
    * @returns {Promise<void>}
    * @private
    */
-  async _transform(chunk, encoding, callback) {
+  async _transform(chunk: any, encoding: BufferEncoding, callback: stream.TransformCallback): Promise<void> {
     const data = this.buffer + chunk.toString();
     const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
     let lastIndex = 0;
@@ -66,6 +65,8 @@ class TransformStream extends stream.Transform {
           const imgData = await this.readAndConvertImage(imgSrc);
           if (imgData !== null) {
             this.push(`<img src="${imgData}" />`);
+          } else {
+            this.push(tag);
           }
         }
       } else if (cssHrefMatch) {
@@ -77,6 +78,8 @@ class TransformStream extends stream.Transform {
           const cssContent = await this.fetchResource(cssFilePath);
           if (cssContent !== null) {
             this.push(`<style>${cssContent}</style>`);
+          } else {
+            this.push(tag);
           }
         }
       } else if (jsSrcMatch) {
@@ -88,6 +91,8 @@ class TransformStream extends stream.Transform {
           const jsContent = await this.fetchResource(jsFilePath);
           if (jsContent !== null) {
             this.push(`<script>${jsContent}</script>`);
+          } else {
+            this.push(tag);
           }
         }
       }
@@ -103,7 +108,7 @@ class TransformStream extends stream.Transform {
    * @param callback
    * @private
    */
-  _flush(callback) {
+  _flush(callback: stream.TransformCallback): void {
     if (this.buffer) {
       this.push(this.buffer);
     }
@@ -115,7 +120,7 @@ class TransformStream extends stream.Transform {
    * @param src
    * @returns {Promise<*|string>}
    */
-  async fetchResource(src) {
+  async fetchResource(src: string): Promise<string | null> {
     if (src.startsWith('http://') || src.startsWith('https://')) {
       try {
         const response = await axios.get(src);
@@ -123,17 +128,18 @@ class TransformStream extends stream.Transform {
           return response.data;
       } catch (error) {
         console.error('Error fetching resource: ', error);
-        return '';
-      }
-    } else {
-      try {
-        const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), src);
-        return await readFileAsync(pathResolved, 'utf8');
-      } catch (error) {
-        console.error('Error reading file: ', error);
-        return '';
+        return null;
       }
     }
+    else {
+      try {
+        return await readFileAsync(src, 'utf8');
+      } catch (error) {
+        console.error('Error reading file: ', error);
+        return null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -141,7 +147,7 @@ class TransformStream extends stream.Transform {
    * @param imgSrc
    * @returns {Promise<string>}
    */
-  async readAndConvertImage(imgSrc) {
+  async readAndConvertImage(imgSrc: string): Promise<string | null> {
     if (imgSrc.startsWith('http://') || imgSrc.startsWith('https://')) {
       try {
         let response = await axios.get(imgSrc, { responseType: 'arraybuffer' });
@@ -149,34 +155,29 @@ class TransformStream extends stream.Transform {
           const prefix = `data:${response.headers['content-type']};base64,`;
           return prefix + Buffer.from(response.data).toString('base64');
         }
-      } catch (e) {
-        console.error('Error fetching or converting image file: ', error);
-        return '';
       }
-    } else {
+      catch (e) {
+        console.error('Error fetching or converting image file: ', e);
+        return null;
+      }
+    }
+    else {
       try {
-        const pathResolved = path.join(path.dirname(this.absoluteHTMLPath), imgSrc);
-        const { default: mime } = await import('mime');
-        const mimeType = mime.getType(pathResolved);
-        console.log(mimeType);
-        if (! mimeType.startsWith('image/')) {
+        const mimeType = mime.getType(imgSrc);
+        if (! mimeType || ! mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
-          return '';
+          return null;
         }
-        console.log(pathResolved);
-        return await readFileAsync(pathResolved);
-        const imgData = await readFileAsync(imgSrc, 'utf8');
-        console.log("Image as UTF8:");
-        console.log(imgData);
+        const imgData = await readFileAsync(imgSrc);
         const base64Image = Buffer.from(imgData).toString('base64');
-        console.log(base64Image);
         return `data:${mimeType};base64,${base64Image}`;
       } catch (error) {
         console.error('Error reading file: ', error);
-        return '';
+        return null;
       }
     }
+    return null;
   }
 }
 
-module.exports = { asyncHtmlInline };
+export { asyncHtmlInline };
