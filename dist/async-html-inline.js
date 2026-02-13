@@ -58,7 +58,8 @@ class TransformStream extends node_stream_1.default.Transform {
                     const imgSrc = imgSrcMatch[1];
                     const imgData = await this.readAndConvertImage(imgSrc);
                     if (imgData !== null) {
-                        this.push(`<img src="${imgData}" />`);
+                        const inlinedTag = tag.replace(/src="[^"]*"/, `src="${imgData}"`);
+                        this.push(inlinedTag);
                     }
                     else {
                         this.push(tag);

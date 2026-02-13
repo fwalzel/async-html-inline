@@ -14,7 +14,7 @@ const readFileAsync = util.promisify(fs.readFile);
  * @param ignore
  * @returns {Promise<void>}
  */
-async function asyncHtmlInline (inputFilePath: string, outputFilePath: string, ignore: string[] = []): Promise<void> {
+async function asyncHtmlInline(inputFilePath: string, outputFilePath: string, ignore: string[] = []): Promise<void> {
   try {
     await pipeline(
       fs.createReadStream(inputFilePath, 'utf8'),
@@ -58,19 +58,20 @@ class TransformStream extends stream.Transform {
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
 
       if (imgSrcMatch) {
-        if (! this.ignore.includes('images')) {
+        if (!this.ignore.includes('images')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
           const imgSrc = imgSrcMatch[1];
           const imgData = await this.readAndConvertImage(imgSrc);
           if (imgData !== null) {
-            this.push(`<img src="${imgData}" />`);
+            const inlinedTag = tag.replace(/src="[^"]*"/, `src="${imgData}"`);
+            this.push(inlinedTag);
           } else {
             this.push(tag);
           }
         }
       } else if (cssHrefMatch) {
-        if (! this.ignore.includes('stylesheets')) {
+        if (!this.ignore.includes('stylesheets')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -83,7 +84,7 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (jsSrcMatch) {
-        if (! this.ignore.includes('scripts')) {
+        if (!this.ignore.includes('scripts')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
@@ -130,8 +131,7 @@ class TransformStream extends stream.Transform {
         console.error('Error fetching resource: ', error);
         return null;
       }
-    }
-    else {
+    } else {
       try {
         return await readFileAsync(src, 'utf8');
       } catch (error) {
@@ -150,21 +150,19 @@ class TransformStream extends stream.Transform {
   async readAndConvertImage(imgSrc: string): Promise<string | null> {
     if (imgSrc.startsWith('http://') || imgSrc.startsWith('https://')) {
       try {
-        let response = await axios.get(imgSrc, { responseType: 'arraybuffer' });
+        let response = await axios.get(imgSrc, {responseType: 'arraybuffer'});
         if (response.status === 200) {
           const prefix = `data:${response.headers['content-type']};base64,`;
           return prefix + Buffer.from(response.data).toString('base64');
         }
-      }
-      catch (e) {
+      } catch (e) {
         console.error('Error fetching or converting image file: ', e);
         return null;
       }
-    }
-    else {
+    } else {
       try {
         const mimeType = mime.getType(imgSrc);
-        if (! mimeType || ! mimeType.startsWith('image/')) {
+        if (!mimeType || !mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
           return null;
         }
@@ -180,4 +178,4 @@ class TransformStream extends stream.Transform {
   }
 }
 
-export { asyncHtmlInline };
+export {asyncHtmlInline};
