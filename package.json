@@ -1,6 +1,6 @@
 {
   "name": "async-html-inline",
-  "version": "1.2.2",
+  "version": "1.3.2",
   "description": "asynchronously inline javascript, stylesheets, and images to an html page",
   "main": "async-html-inline.js",
   "module": "async-html-inline.mjs",
