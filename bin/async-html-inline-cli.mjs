@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { asyncHtmlInline } from '../async-html-inline.mjs';
+import { asyncHtmlInline } from '../dist/async-html-inline.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
