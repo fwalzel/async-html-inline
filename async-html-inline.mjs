@@ -62,6 +62,8 @@ class TransformStream extends stream.Transform {
           const imgData = await this.readAndConvertImage(imgSrc);
           if (imgData !== null) {
             this.push(`<img src="${imgData}" />`);
+          } else {
+            this.push(tag);
           }
         }
       } else if (cssHrefMatch) {
@@ -73,6 +75,8 @@ class TransformStream extends stream.Transform {
           const cssContent = await this.fetchResource(cssFilePath);
           if (cssContent !== null) {
             this.push(`<style>${cssContent}</style>`);
+          } else {
+            this.push(tag);
           }
         }
       } else if (jsSrcMatch) {
@@ -84,6 +88,8 @@ class TransformStream extends stream.Transform {
           const jsContent = await this.fetchResource(jsFilePath);
           if (jsContent !== null) {
             this.push(`<script>${jsContent}</script>`);
+          } else {
+            this.push(tag);
           }
         }
       }
@@ -119,7 +125,7 @@ class TransformStream extends stream.Transform {
           return response.data;
       } catch (error) {
         console.error('Error fetching resource: ', error);
-        return '';
+        return null;
       }
     }
     else {
@@ -127,7 +133,7 @@ class TransformStream extends stream.Transform {
         return await readFileAsync(src, 'utf8');
       } catch (error) {
         console.error('Error reading file: ', error);
-        return '';
+        return null;
       }
     }
   }
@@ -147,8 +153,8 @@ class TransformStream extends stream.Transform {
         }
       }
       catch (e) {
-        console.error('Error fetching or converting image file: ', error);
-        return '';
+        console.error('Error fetching or converting image file: ', e);
+        return null;
       }
     }
     else {
@@ -156,14 +162,14 @@ class TransformStream extends stream.Transform {
         const mimeType = mime.getType(imgSrc);
         if (! mimeType.startsWith('image/')) {
           console.error('This is not an image file: ' + imgSrc);
-          return '';
+          return null;
         }
         const imgData = await readFileAsync(imgSrc);
         const base64Image = Buffer.from(imgData).toString('base64');
         return `data:${mimeType};base64,${base64Image}`;
       } catch (error) {
         console.error('Error reading file: ', error);
-        return '';
+        return null;
       }
     }
   }

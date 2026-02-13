@@ -81,6 +81,62 @@ await asyncHtmlInline('input.html', 'output.html', ignore);
 The elements of the ignore array can be `stylesheets`, `scripts`, `images`.
 
 
+## CLI Usage
+
+You can also use `async-html-inline` from the command line.
+
+### Installation
+
+Install globally to use the CLI:
+
+```bash
+npm install -g async-html-inline
+```
+
+### Basic Usage
+
+```bash
+html-inline <input> <output>
+```
+
+Example:
+
+```bash
+html-inline input.html output.html
+```
+
+### Options
+
+**`--ignore-stylesheets`** - Skip inlining CSS stylesheets
+
+**`--ignore-scripts`** - Skip inlining JavaScript files
+
+**`--ignore-images`** - Skip inlining images
+
+**`--help, -h`** - Show help message
+
+### Examples
+
+Inline all resources:
+```bash
+html-inline input.html output.html
+```
+
+Ignore images from being inlined:
+```bash
+html-inline input.html output.html --ignore-images
+```
+
+Ignore multiple resource types:
+```bash
+html-inline input.html output.html --ignore-stylesheets --ignore-scripts
+```
+
+Display help:
+```bash
+html-inline --help
+```
+
 
 ## Example
 
@@ -96,5 +152,5 @@ Happy Coding.
 
 ## License
 
-Copyright (c) 2023–25 Florian Walzel,
+Copyright (c) 2023–26 Florian Walzel,
 MIT License
