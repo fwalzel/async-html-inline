@@ -43,13 +43,14 @@ class TransformStream extends node_stream_1.default.Transform {
      */
     async _transform(chunk, encoding, callback) {
         const data = this.buffer + chunk.toString();
-        const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
+        const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<image\s+[^>]*href="([^"]+)"[^>]*\/?>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
         let lastIndex = 0;
         let match;
         while ((match = regex.exec(data))) {
             const tag = match[0];
             const imgSrcMatch = tag.match(/<img[^>]*src="([^"]+)"[^>]*>/);
-            const cssHrefMatch = tag.match(/href="([^"]+)"/);
+            const svgImageHrefMatch = tag.match(/<image[^>]*href="([^"]+)"[^>]*\/?>/);
+            const cssHrefMatch = tag.match(/<link[^>]*href="([^"]+)"[^>]*>/);
             const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
             if (imgSrcMatch) {
                 if (!this.ignore.includes('images')) {
@@ -59,6 +60,21 @@ class TransformStream extends node_stream_1.default.Transform {
                     const imgData = await this.readAndConvertImage(imgSrc);
                     if (imgData !== null) {
                         const inlinedTag = tag.replace(/src="[^"]*"/, `src="${imgData}"`);
+                        this.push(inlinedTag);
+                    }
+                    else {
+                        this.push(tag);
+                    }
+                }
+            }
+            else if (svgImageHrefMatch) {
+                if (!this.ignore.includes('images')) {
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    const imageSrc = svgImageHrefMatch[1];
+                    const imageData = await this.readAndConvertImage(imageSrc);
+                    if (imageData !== null) {
+                        const inlinedTag = tag.replace(/href="[^"]*"/, `href="${imageData}"`);
                         this.push(inlinedTag);
                     }
                     else {
