@@ -47,7 +47,7 @@ class TransformStream extends stream.Transform {
    */
   async _transform(chunk: any, encoding: BufferEncoding, callback: stream.TransformCallback): Promise<void> {
     const data = this.buffer + chunk.toString();
-    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<image\s+[^>]*href="([^"]+)"[^>]*\/?>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
+    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<image\s+[^>]*href="([^"]+)"[^>]*\/?>|<video\s+[^>]*poster="([^"]+)"[^>]*>|<object\s+[^>]*data="([^"]+)"[^>]*>|<embed\s+[^>]*src="([^"]+)"[^>]*\/?>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
     let lastIndex = 0;
     let match;
 
@@ -55,6 +55,9 @@ class TransformStream extends stream.Transform {
       const tag = match[0];
       const imgSrcMatch = tag.match(/<img[^>]*src="([^"]+)"[^>]*>/);
       const svgImageHrefMatch = tag.match(/<image[^>]*href="([^"]+)"[^>]*\/?>/);
+      const videoPosterMatch = tag.match(/<video[^>]*poster="([^"]+)"[^>]*>/);
+      const objectDataMatch = tag.match(/<object[^>]*data="([^"]+)"[^>]*>/);
+      const embedSrcMatch = tag.match(/<embed[^>]*src="([^"]+)"[^>]*\/?>/);
       const cssHrefMatch = tag.match(/<link[^>]*href="([^"]+)"[^>]*>/);
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
 
@@ -79,6 +82,45 @@ class TransformStream extends stream.Transform {
           const imageData = await this.readAndConvertImage(imageSrc);
           if (imageData !== null) {
             const inlinedTag = tag.replace(/href="[^"]*"/, `href="${imageData}"`);
+            this.push(inlinedTag);
+          } else {
+            this.push(tag);
+          }
+        }
+      } else if (videoPosterMatch) {
+        if (!this.ignore.includes('images')) {
+          this.push(data.slice(lastIndex, match.index));
+          lastIndex = regex.lastIndex;
+          const posterSrc = videoPosterMatch[1];
+          const posterData = await this.readAndConvertImage(posterSrc);
+          if (posterData !== null) {
+            const inlinedTag = tag.replace(/poster="[^"]*"/, `poster="${posterData}"`);
+            this.push(inlinedTag);
+          } else {
+            this.push(tag);
+          }
+        }
+      } else if (objectDataMatch) {
+        if (!this.ignore.includes('images')) {
+          this.push(data.slice(lastIndex, match.index));
+          lastIndex = regex.lastIndex;
+          const objectSrc = objectDataMatch[1];
+          const objectData = await this.readAndConvertImage(objectSrc);
+          if (objectData !== null) {
+            const inlinedTag = tag.replace(/data="[^"]*"/, `data="${objectData}"`);
+            this.push(inlinedTag);
+          } else {
+            this.push(tag);
+          }
+        }
+      } else if (embedSrcMatch) {
+        if (!this.ignore.includes('images')) {
+          this.push(data.slice(lastIndex, match.index));
+          lastIndex = regex.lastIndex;
+          const embedSrc = embedSrcMatch[1];
+          const embedData = await this.readAndConvertImage(embedSrc);
+          if (embedData !== null) {
+            const inlinedTag = tag.replace(/src="[^"]*"/, `src="${embedData}"`);
             this.push(inlinedTag);
           } else {
             this.push(tag);
