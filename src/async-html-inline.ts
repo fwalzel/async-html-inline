@@ -47,21 +47,31 @@ class TransformStream extends stream.Transform {
    */
   async _transform(chunk: any, encoding: BufferEncoding, callback: stream.TransformCallback): Promise<void> {
     const data = this.buffer + chunk.toString();
-    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<img\s+[^>]*src="([^"]+)"[^>]*>|<image\s+[^>]*href="([^"]+)"[^>]*\/?>|<video\s+[^>]*poster="([^"]+)"[^>]*>|<object\s+[^>]*data="([^"]+)"[^>]*>|<embed\s+[^>]*src="([^"]+)"[^>]*\/?>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
+    const regex = /<link\s+[^>]*rel="stylesheet"[^>]*>|<style[^>]*>([\s\S]*?)<\/style>|<img\s+[^>]*src="([^"]+)"[^>]*>|<image\s+[^>]*href="([^"]+)"[^>]*\/?>|<video\s+[^>]*poster="([^"]+)"[^>]*>|<object\s+[^>]*data="([^"]+)"[^>]*>|<embed\s+[^>]*src="([^"]+)"[^>]*\/?>|<source\s+[^>]*src="([^"]+)"[^>]*>|<script\s+[^>]*src="([^"]+)"[^>]*><\/script>/gs;
     let lastIndex = 0;
     let match;
 
     while ((match = regex.exec(data))) {
       const tag = match[0];
+      const inlineStyleMatch = tag.match(/<style[^>]*>([\s\S]*?)<\/style>/);
       const imgSrcMatch = tag.match(/<img[^>]*src="([^"]+)"[^>]*>/);
       const svgImageHrefMatch = tag.match(/<image[^>]*href="([^"]+)"[^>]*\/?>/);
       const videoPosterMatch = tag.match(/<video[^>]*poster="([^"]+)"[^>]*>/);
       const objectDataMatch = tag.match(/<object[^>]*data="([^"]+)"[^>]*>/);
       const embedSrcMatch = tag.match(/<embed[^>]*src="([^"]+)"[^>]*\/?>/);
+      const videoSourceMatch = tag.match(/<source[^>]*src="([^"]+)"[^>]*>/);
       const cssHrefMatch = tag.match(/<link[^>]*href="([^"]+)"[^>]*>/);
       const jsSrcMatch = tag.match(/<script[^>]*src="([^"]+)"[^>]*><\/script>/);
 
-      if (imgSrcMatch) {
+      if (inlineStyleMatch) {
+        if (!this.ignore.includes('stylesheets')) {
+          this.push(data.slice(lastIndex, match.index));
+          lastIndex = regex.lastIndex;
+          const styleContent = inlineStyleMatch[1];
+          const processedCss = await this.processCssUrls(styleContent);
+          this.push(`<style>${processedCss}</style>`);
+        }
+      } else if (imgSrcMatch) {
         if (!this.ignore.includes('images')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
@@ -126,6 +136,19 @@ class TransformStream extends stream.Transform {
             this.push(tag);
           }
         }
+      } else if (videoSourceMatch) {
+        if (!this.ignore.includes('videos')) {
+          this.push(data.slice(lastIndex, match.index));
+          lastIndex = regex.lastIndex;
+          const videoSrc = videoSourceMatch[1];
+          const videoData = await this.readAndConvertVideo(videoSrc);
+          if (videoData !== null) {
+            const inlinedTag = tag.replace(/src="[^"]*"/, `src="${videoData}"`);
+            this.push(inlinedTag);
+          } else {
+            this.push(tag);
+          }
+        }
       } else if (cssHrefMatch) {
         if (!this.ignore.includes('stylesheets')) {
           this.push(data.slice(lastIndex, match.index));
@@ -134,7 +157,8 @@ class TransformStream extends stream.Transform {
           const cssFilePath = cssHrefMatch[1];
           const cssContent = await this.fetchResource(cssFilePath);
           if (cssContent !== null) {
-            this.push(`<style>${cssContent}</style>`);
+            const processedCss = await this.processCssUrls(cssContent);
+            this.push(`<style>${processedCss}</style>`);
           } else {
             this.push(tag);
           }
@@ -170,6 +194,43 @@ class TransformStream extends stream.Transform {
       this.push(this.buffer);
     }
     callback();
+  }
+
+  /**
+   * Process CSS content and inline background-image URLs
+   * @param css
+   * @returns {Promise<string>}
+   */
+  async processCssUrls(css: string): Promise<string> {
+    const urlRegex = /url\(['"]?([^'")]+)['"]?\)/g;
+    let match;
+    const replacements: Array<{original: string, replacement: string}> = [];
+
+    while ((match = urlRegex.exec(css)) !== null) {
+      const originalUrl = match[0];
+      const imageUrl = match[1];
+      
+      // Skip data URIs that are already inlined
+      if (imageUrl.startsWith('data:')) {
+        continue;
+      }
+
+      const imageData = await this.readAndConvertImage(imageUrl);
+      if (imageData !== null) {
+        replacements.push({
+          original: originalUrl,
+          replacement: `url("${imageData}")`
+        });
+      }
+    }
+
+    // Apply all replacements
+    let processedCss = css;
+    for (const {original, replacement} of replacements) {
+      processedCss = processedCss.replace(original, replacement);
+    }
+
+    return processedCss;
   }
 
   /**
@@ -225,6 +286,41 @@ class TransformStream extends stream.Transform {
         const imgData = await readFileAsync(imgSrc);
         const base64Image = Buffer.from(imgData).toString('base64');
         return `data:${mimeType};base64,${base64Image}`;
+      } catch (error) {
+        console.error('Error reading file: ', error);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   *
+   * @param videoSrc
+   * @returns {Promise<string>}
+   */
+  async readAndConvertVideo(videoSrc: string): Promise<string | null> {
+    if (videoSrc.startsWith('http://') || videoSrc.startsWith('https://')) {
+      try {
+        let response = await axios.get(videoSrc, {responseType: 'arraybuffer'});
+        if (response.status === 200) {
+          const prefix = `data:${response.headers['content-type']};base64,`;
+          return prefix + Buffer.from(response.data).toString('base64');
+        }
+      } catch (e) {
+        console.error('Error fetching or converting video file: ', e);
+        return null;
+      }
+    } else {
+      try {
+        const mimeType = mime.getType(videoSrc);
+        if (!mimeType || !mimeType.startsWith('video/')) {
+          console.error('This is not a video file: ' + videoSrc);
+          return null;
+        }
+        const videoData = await readFileAsync(videoSrc);
+        const base64Video = Buffer.from(videoData).toString('base64');
+        return `data:${mimeType};base64,${base64Video}`;
       } catch (error) {
         console.error('Error reading file: ', error);
         return null;
