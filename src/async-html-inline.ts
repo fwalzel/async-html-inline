@@ -68,7 +68,7 @@ class TransformStream extends stream.Transform {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
           const styleContent = inlineStyleMatch[1];
-          const processedCss = await this.processCssUrls(styleContent);
+          const processedCss = await this.processCssAndFonts(styleContent);
           this.push(`<style>${processedCss}</style>`);
         }
       } else if (imgSrcMatch) {
@@ -150,14 +150,21 @@ class TransformStream extends stream.Transform {
           }
         }
       } else if (cssHrefMatch) {
+        const cssFilePath = cssHrefMatch[1];
+        const isFontStylesheet = cssFilePath.includes('fonts.googleapis.com') || cssFilePath.includes('fonts.gstatic.com');
+        
+        if (isFontStylesheet && this.ignore.includes('fonts')) {
+          // Skip font stylesheets if fonts are excluded
+          continue;
+        }
+        
         if (!this.ignore.includes('stylesheets')) {
           this.push(data.slice(lastIndex, match.index));
           lastIndex = regex.lastIndex;
 
-          const cssFilePath = cssHrefMatch[1];
           const cssContent = await this.fetchResource(cssFilePath);
           if (cssContent !== null) {
-            const processedCss = await this.processCssUrls(cssContent);
+            const processedCss = await this.processCssAndFonts(cssContent);
             this.push(`<style>${processedCss}</style>`);
           } else {
             this.push(tag);
@@ -197,7 +204,62 @@ class TransformStream extends stream.Transform {
   }
 
   /**
-   * Process CSS content and inline background-image URLs
+   * Process CSS content and inline fonts, @import rules, and background-image URLs
+   * @param css
+   * @returns {Promise<string>}
+   */
+  async processCssAndFonts(css: string): Promise<string> {
+    // First, process @import rules
+    if (!this.ignore.includes('fonts')) {
+      css = await this.processImportRules(css);
+    }
+    
+    // Then process url() for fonts and images
+    css = await this.processCssUrls(css);
+    
+    return css;
+  }
+
+  /**
+   * Process @import rules in CSS and inline imported stylesheets
+   * @param css
+   * @returns {Promise<string>}
+   */
+  async processImportRules(css: string): Promise<string> {
+    const importRegex = /@import\s+url\(['"]?([^'"\)]+)['"]?\)|@import\s+['"]([^'"]+)['"]/g;
+    let match;
+    const replacements: Array<{original: string, replacement: string}> = [];
+
+    while ((match = importRegex.exec(css)) !== null) {
+      const originalImport = match[0];
+      const importUrl = match[1] || match[2];
+      
+      try {
+        const importedCss = await this.fetchResource(importUrl);
+        if (importedCss !== null) {
+          // Recursively process the imported CSS for fonts
+          const processedImportedCss = await this.processCssAndFonts(importedCss);
+          replacements.push({
+            original: originalImport,
+            replacement: processedImportedCss
+          });
+        }
+      } catch (e) {
+        console.error('Error processing @import rule: ', e);
+      }
+    }
+
+    // Apply all replacements
+    let processedCss = css;
+    for (const {original, replacement} of replacements) {
+      processedCss = processedCss.replace(original, replacement);
+    }
+
+    return processedCss;
+  }
+
+  /**
+   * Process CSS content and inline background-image URLs and font URLs
    * @param css
    * @returns {Promise<string>}
    */
@@ -208,18 +270,28 @@ class TransformStream extends stream.Transform {
 
     while ((match = urlRegex.exec(css)) !== null) {
       const originalUrl = match[0];
-      const imageUrl = match[1];
+      const resourceUrl = match[1];
       
       // Skip data URIs that are already inlined
-      if (imageUrl.startsWith('data:')) {
+      if (resourceUrl.startsWith('data:')) {
         continue;
       }
 
-      const imageData = await this.readAndConvertImage(imageUrl);
-      if (imageData !== null) {
+      // Try to inline as font first, then as image
+      let inlinedData = null;
+      
+      if (!this.ignore.includes('fonts')) {
+        inlinedData = await this.readAndConvertFont(resourceUrl);
+      }
+      
+      if (inlinedData === null && !this.ignore.includes('images')) {
+        inlinedData = await this.readAndConvertImage(resourceUrl);
+      }
+      
+      if (inlinedData !== null) {
         replacements.push({
           original: originalUrl,
-          replacement: `url("${imageData}")`
+          replacement: `url("${inlinedData}")`
         });
       }
     }
@@ -323,6 +395,42 @@ class TransformStream extends stream.Transform {
         return `data:${mimeType};base64,${base64Video}`;
       } catch (error) {
         console.error('Error reading file: ', error);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   *
+   * @param fontSrc
+   * @returns {Promise<string>}
+   */
+  async readAndConvertFont(fontSrc: string): Promise<string | null> {
+    if (fontSrc.startsWith('http://') || fontSrc.startsWith('https://')) {
+      try {
+        let response = await axios.get(fontSrc, {responseType: 'arraybuffer'});
+        if (response.status === 200) {
+          const contentType = response.headers['content-type'];
+          // Check if it's a font file
+          if (contentType && (contentType.includes('font') || contentType.includes('woff') || contentType.includes('ttf') || contentType.includes('otf'))) {
+            const prefix = `data:${contentType};base64,`;
+            return prefix + Buffer.from(response.data).toString('base64');
+          }
+        }
+      } catch (e) {
+        // Not a font file or error fetching, return null to try as image
+        return null;
+      }
+    } else {
+      try {
+        const mimeType = mime.getType(fontSrc);
+        if (mimeType && (mimeType.includes('font') || mimeType.includes('woff') || mimeType.includes('ttf') || mimeType.includes('otf'))) {
+          const fontData = await readFileAsync(fontSrc);
+          const base64Font = Buffer.from(fontData).toString('base64');
+          return `data:${mimeType};base64,${base64Font}`;
+        }
+      } catch (error) {
         return null;
       }
     }
