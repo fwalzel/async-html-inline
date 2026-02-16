@@ -1,8 +1,8 @@
 # async-html-inline
 
-Asynchronously inline javascript, stylesheets, and images to an html page.
+Asynchronously inline external resources (JavaScript, CSS, images, videos, fonts) into a single HTML file.
 
-Can inline resources served from local environment and from external URLs. Uses streams for efficient data handling, supports typescript.
+Converts all external resource references to base64 data URIs, creating a self-contained HTML file. Supports resources from both local file system and external URLs. Uses streams for efficient data handling and includes full TypeScript support.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build](https://github.com/fwalzel/async-html-inline/actions/workflows/node.js.yml/badge.svg)](https://github.com/fwalzel/async-html-inline/actions/workflows/node.js.yml/badge.svg)
@@ -30,6 +30,38 @@ As ES Module:
 import { asyncHtmlInline } from 'async-html-inline';
 ```
 
+
+## What Can Be Inlined?
+
+`async-html-inline` supports inlining the following resource types:
+
+| Resource Type | HTML Tags / CSS Properties | Output Format |
+|---------------|---------------------------|---------------|
+| **Stylesheets** | `<link rel="stylesheet" href="...">` | Inline `<style>` tags |
+| **JavaScript** | `<script src="..."></script>` | Inline `<script>` tags |
+| **Images** | `<img src="...">` | Base64 data URI in `src` attribute |
+| **SVG Images** | `<image href="...">` (SVG element) | Base64 data URI in `href` attribute |
+| **Video Posters** | `<video poster="...">` | Base64 data URI in `poster` attribute |
+| **Video Sources** | `<source src="...">` (within `<video>`) | Base64 data URI in `src` attribute |
+| **Object Data** | `<object data="...">` | Base64 data URI in `data` attribute |
+| **Embed Sources** | `<embed src="...">` | Base64 data URI in `src` attribute |
+| **CSS Background Images** | `background-image: url(...)` | Base64 data URI in CSS |
+| **Fonts** | `@font-face { src: url(...) }` | Base64 data URI in CSS |
+| **Font Imports** | `<link href="fonts.googleapis.com">` or `@import url('fonts.googleapis.com')` | Inline `<style>` with embedded fonts |
+
+### Supported File Formats
+
+- **Images**: JPG, PNG, GIF, SVG, WebP, BMP, ICO, TIFF
+- **Videos**: MP4, WebM, OGG
+- **Fonts**: WOFF, WOFF2, TTF, OTF, EOT
+- **Stylesheets**: CSS (including preprocessed CSS)
+- **Scripts**: JavaScript (including ES modules)
+
+### Resource Sources
+
+- **Local files**: Relative or absolute file paths
+- **Remote URLs**: HTTP/HTTPS resources from any domain
+- **CDN resources**: Google Fonts, Bootstrap CDN, etc.
 
 ## Usage
 
@@ -71,14 +103,44 @@ renders to the output.html
 
 ### Exclusions
 
-You can ignore specific resources from being inlined by passing a third argument. Use an array with resources to be excluded as it’s elements.
+You can selectively exclude specific resource types from being inlined by passing an array as the third argument.
 
+### Available Exclusion Options
+
+| Option | Description | Excludes |
+|--------|-------------|----------|
+| `'stylesheets'` | Skip CSS stylesheets | `<link rel="stylesheet">`, `<style>` tags |
+| `'scripts'` | Skip JavaScript files | `<script src="...">` |
+| `'images'` | Skip all images | `<img>`, `<image>`, `<video poster>`, `<object>`, `<embed>`, CSS `background-image` |
+| `'videos'` | Skip video files | `<source src="...">` within `<video>` tags |
+| `'fonts'` | Skip font files | Font URLs in `@font-face`, Google Fonts, `@import` for fonts |
+
+### Examples
+
+Exclude stylesheets and scripts:
 ```javascript
 const ignore = ['stylesheets', 'scripts'];
 await asyncHtmlInline('input.html', 'output.html', ignore);
 ```
 
-The elements of the ignore array can be `stylesheets`, `scripts`, `images`.
+Exclude only videos (useful for large video files):
+```javascript
+const ignore = ['videos'];
+await asyncHtmlInline('input.html', 'output.html', ignore);
+```
+
+Exclude fonts and videos:
+```javascript
+const ignore = ['fonts', 'videos'];
+await asyncHtmlInline('input.html', 'output.html', ignore);
+```
+
+Inline everything (default behavior):
+```javascript
+await asyncHtmlInline('input.html', 'output.html');
+// or explicitly
+await asyncHtmlInline('input.html', 'output.html', []);
+```
 
 
 ## CLI Usage
@@ -113,6 +175,10 @@ html-inline input.html output.html
 
 **`--ignore-images`** - Skip inlining images
 
+**`--ignore-videos`** - Skip inlining video files
+
+**`--ignore-fonts`** - Skip inlining font files
+
 **`--help, -h`** - Show help message
 
 ### Examples
@@ -127,9 +193,20 @@ Ignore images from being inlined:
 html-inline input.html output.html --ignore-images
 ```
 
+Ignore videos (useful for large video files):
+```bash
+html-inline input.html output.html --ignore-videos
+```
+
+Ignore fonts (keep external font links):
+```bash
+html-inline input.html output.html --ignore-fonts
+```
+
 Ignore multiple resource types:
 ```bash
 html-inline input.html output.html --ignore-stylesheets --ignore-scripts
+html-inline input.html output.html --ignore-fonts --ignore-videos
 ```
 
 Display help:
