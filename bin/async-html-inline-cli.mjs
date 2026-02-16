@@ -18,12 +18,15 @@ Options:
   --ignore-stylesheets    Skip inlining CSS stylesheets
   --ignore-scripts        Skip inlining JavaScript files
   --ignore-images         Skip inlining images
+  --ignore-videos         Skip inlining video files
+  --ignore-fonts          Skip inlining font files
   --help, -h              Show this help message
 
 Examples:
   html-inline input.html output.html
   html-inline input.html output.html --ignore-images
   html-inline input.html output.html --ignore-stylesheets --ignore-scripts
+  html-inline input.html output.html --ignore-fonts --ignore-videos
 `);
 }
 
@@ -51,6 +54,12 @@ export async function cli(argv) {
   }
   if (args.includes('--ignore-images')) {
     ignore.push('images');
+  }
+  if (args.includes('--ignore-videos')) {
+    ignore.push('videos');
+  }
+  if (args.includes('--ignore-fonts')) {
+    ignore.push('fonts');
   }
 
   const input = path.resolve(args[0]);
