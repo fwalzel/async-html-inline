@@ -1,0 +1,5 @@
+.background-test {
+  background-image: url('test-image.svg');
+  width: 100px;
+  height: 100px;
+}
