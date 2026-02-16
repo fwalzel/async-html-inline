@@ -1,0 +1,26 @@
+{
+  "all": true,
+  "include": [
+    "src/**/*.ts",
+    "dist/**/*.js",
+    "dist/**/*.mjs"
+  ],
+  "exclude": [
+    "test/**",
+    "node_modules/**",
+    "build.js",
+    "bin/**"
+  ],
+  "reporter": [
+    "text",
+    "text-summary",
+    "html",
+    "lcov"
+  ],
+  "report-dir": "./coverage",
+  "check-coverage": true,
+  "lines": 75,
+  "functions": 80,
+  "branches": 50,
+  "statements": 75
+}

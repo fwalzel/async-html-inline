@@ -225,6 +225,14 @@ npm run example
 
 and see the output.html in the `example` folder.
 
+## Tests
+
+To perform unit tests run
+
+```bash
+npm test
+```
+
 Happy Coding.
 
 ## License

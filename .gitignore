@@ -20,3 +20,8 @@ example/output.html
 
 # Custom
 todo.md
+
+# Test coverage and output
+coverage/
+test/output/
+.nyc_output/
