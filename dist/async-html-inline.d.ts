@@ -1,4 +1,10 @@
 /**
+ * async-html-inline.ts
+ *
+ * @author Florian Walzel
+ * @license MIT
+ */
+/**
  * Main function to inline external resources in an HTML file
  *
  * This function reads an HTML file, processes it to inline external resources
