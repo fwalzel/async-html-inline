@@ -1,3 +1,9 @@
+/**
+ * async-html-inline.ts
+ *
+ * @author Florian Walzel
+ * @license MIT
+ */
 // Import required Node.js and external modules
 import fs from 'node:fs';
 import stream from 'node:stream';

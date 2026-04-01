@@ -1,4 +1,10 @@
 "use strict";
+/**
+ * async-html-inline.ts
+ *
+ * @author Florian Walzel
+ * @license MIT
+ */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
