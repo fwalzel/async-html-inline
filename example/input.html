@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>async-html-inline - Complete Example</title>
+  
+  <!-- 1. CSS Stylesheet Inclusion -->
+  <link rel="stylesheet" href="assets/styles.css">
+  
+  <!-- 2. CSS with Background Image -->
+  <link rel="stylesheet" href="assets/background.css">
+  
+  <!-- 3. JavaScript File Inclusion -->
+  <script src="assets/script.js"></script>
+  
+  <!-- 4. Google Fonts (Font Inclusion) -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* 5. CSS @import for Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap');
+    
+    .font-demo {
+      font-family: 'Roboto', sans-serif;
+      margin: 10px 0;
+    }
+    
+    .font-demo-2 {
+      font-family: 'Open Sans', sans-serif;
+      font-weight: 300;
+    }
+  </style>
+</head>
+<body>
+  <h1>async-html-inline Complete Example</h1>
+  
+  <div class="example-section">
+    <h2>1. CSS Stylesheet</h2>
+    <p>This page uses <span class="highlight">external CSS</span> from styles.css</p>
+  </div>
+  
+  <div class="example-section">
+    <h2>2. JavaScript File</h2>
+    <p>External JavaScript from script.js is loaded (check console and hover over title)</p>
+  </div>
+  
+  <div class="example-section">
+    <h2>3. Image Inclusion</h2>
+    <!-- 6. Image src attribute -->
+    <img src="assets/icon.svg" alt="Clock Icon" width="48" height="48" style="vertical-align: middle;">
+    <span>Image from external SVG file</span>
+  </div>
+  
+  <div class="example-section">
+    <h2>4. CSS Background Image</h2>
+    <!-- 7. CSS background-image: url() -->
+    <div class="bg-example"></div>
+    <p>Background image loaded via CSS url()</p>
+  </div>
+  
+  <div class="example-section">
+    <h2>5. SVG Image Element</h2>
+    <svg width="200" height="100" xmlns="http://www.w3.org/2000/svg">
+      <!-- 8. SVG <image> element -->
+      <image href="assets/icon.svg" x="10" y="10" width="80" height="80"/>
+      <text x="100" y="50" fill="#333">SVG &lt;image&gt; element</text>
+    </svg>
+  </div>
+  
+  <div class="example-section">
+    <h2>6. Video with Poster</h2>
+    <!-- 9. Video poster attribute -->
+    <!-- 10. Video source element -->
+    <video poster="assets/icon.svg" controls width="320" height="240">
+      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p>Video with poster image and source</p>
+  </div>
+  
+  <div class="example-section">
+    <h2>7. Object Element</h2>
+    <!-- 11. Object data attribute -->
+    <object data="assets/icon.svg" type="image/svg+xml" width="48" height="48"></object>
+    <span>SVG loaded via &lt;object&gt; tag</span>
+  </div>
+  
+  <div class="example-section">
+    <h2>8. Embed Element</h2>
+    <!-- 12. Embed src attribute -->
+    <embed src="assets/icon.svg" type="image/svg+xml" width="48" height="48">
+    <span>SVG loaded via &lt;embed&gt; tag</span>
+  </div>
+  
+  <div class="example-section">
+    <h2>9. Font Inclusion</h2>
+    <p class="font-demo">This text uses <strong>Roboto font</strong> from Google Fonts (via &lt;link&gt;)</p>
+    <p class="font-demo-2">This text uses <strong>Open Sans font</strong> from Google Fonts (via @import)</p>
+  </div>
+  
+  <div class="example-section" style="background-color: #e7f3ff; border-left: 4px solid #007bff;">
+    <h2>✨ Result</h2>
+    <p>After running <code>async-html-inline</code>, all external resources will be embedded as base64 data URIs or inline code, creating a single self-contained HTML file!</p>
+  </div>
+</body>
+</html>
