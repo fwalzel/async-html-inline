@@ -100,6 +100,12 @@ class TransformStream extends stream.Transform {
                     const processedCss = await this.processCssAndFonts(styleContent);
                     this.push(`<style>${processedCss}</style>`);
                 }
+                else {
+                    // If stylesheets are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
+                }
                 // Handle <img> tags - convert image src to base64 data URI
             }
             else if (imgSrcMatch) {
@@ -119,6 +125,12 @@ class TransformStream extends stream.Transform {
                         this.push(tag);
                     }
                 }
+                else {
+                    // If images are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
+                }
                 // Handle SVG <image> elements - convert href to base64 data URI
             }
             else if (svgImageHrefMatch) {
@@ -135,6 +147,12 @@ class TransformStream extends stream.Transform {
                     else {
                         this.push(tag);
                     }
+                }
+                else {
+                    // If images are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
                 }
                 // Handle <video poster=""> attributes - inline the poster image
             }
@@ -153,6 +171,12 @@ class TransformStream extends stream.Transform {
                         this.push(tag);
                     }
                 }
+                else {
+                    // If images are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
+                }
                 // Handle <object data=""> tags - inline the object data
             }
             else if (objectDataMatch) {
@@ -170,6 +194,12 @@ class TransformStream extends stream.Transform {
                         this.push(tag);
                     }
                 }
+                else {
+                    // If images are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
+                }
                 // Handle <embed src=""> tags - inline the embedded content
             }
             else if (embedSrcMatch) {
@@ -186,6 +216,12 @@ class TransformStream extends stream.Transform {
                     else {
                         this.push(tag);
                     }
+                }
+                else {
+                    // If images are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
                 }
                 // Handle <source src=""> tags (video/audio sources) - inline the video file
             }
@@ -205,6 +241,12 @@ class TransformStream extends stream.Transform {
                         this.push(tag);
                     }
                 }
+                else {
+                    // If videos are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
+                }
                 // Handle <link rel="stylesheet"> tags - inline external CSS
             }
             else if (cssHrefMatch) {
@@ -213,6 +255,9 @@ class TransformStream extends stream.Transform {
                 const isFontStylesheet = cssFilePath.includes('fonts.googleapis.com') || cssFilePath.includes('fonts.gstatic.com');
                 // Skip font stylesheets if fonts are excluded from inlining
                 if (isFontStylesheet && this.ignore.includes('fonts')) {
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
                     continue;
                 }
                 if (!this.ignore.includes('stylesheets')) {
@@ -228,6 +273,12 @@ class TransformStream extends stream.Transform {
                     else {
                         this.push(tag);
                     }
+                }
+                else {
+                    // If stylesheets are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
                 }
                 // Handle <script src=""> tags - inline external JavaScript
             }
@@ -245,6 +296,12 @@ class TransformStream extends stream.Transform {
                     else {
                         this.push(tag);
                     }
+                }
+                else {
+                    // If scripts are ignored, keep the original tag
+                    this.push(data.slice(lastIndex, match.index));
+                    lastIndex = regex.lastIndex;
+                    this.push(tag);
                 }
             }
         }
