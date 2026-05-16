@@ -62,8 +62,9 @@ import { asyncHtmlInline } from 'async-html-inline';
 - **Remote URLs**: HTTP/HTTPS resources from any domain
 - **CDN resources**: Google Fonts, Bootstrap CDN, etc.
 
+---
 
-[![Florian Walzel: What was design? Declarations and definitions from a century of creative quest](https://florianwalzel.com/wwd-hero-d.webp)](https://www.slanted.de/product/what-was-design/)
+[![Florian Walzel, What was design? Declarations and definitions from a century of creative quest](https://florianwalzel.com/wwd-hero-d.webp)](https://www.slanted.de/product/what-was-design/)
 
 
 ## Usage
