@@ -15,7 +15,6 @@ Converts all external resource references to base64 data URIs, creating a self-c
 npm install async-html-inline
 ```
 
-
 ## Import
 
 As CommonJS:
@@ -30,24 +29,24 @@ As ES Module:
 import { asyncHtmlInline } from 'async-html-inline';
 ```
 
-
 ## What Can Be Inlined?
 
 `async-html-inline` supports inlining the following resource types:
 
-| Resource Type | HTML Tags / CSS Properties | Output Format |
-|---------------|---------------------------|---------------|
-| **Stylesheets** | `<link rel="stylesheet" href="...">` | Inline `<style>` tags |
-| **JavaScript** | `<script src="..."></script>` | Inline `<script>` tags |
-| **Images** | `<img src="...">` | Base64 data URI in `src` attribute |
-| **SVG Images** | `<image href="...">` (SVG element) | Base64 data URI in `href` attribute |
-| **Video Posters** | `<video poster="...">` | Base64 data URI in `poster` attribute |
-| **Video Sources** | `<source src="...">` (within `<video>`) | Base64 data URI in `src` attribute |
-| **Object Data** | `<object data="...">` | Base64 data URI in `data` attribute |
-| **Embed Sources** | `<embed src="...">` | Base64 data URI in `src` attribute |
-| **CSS Background Images** | `background-image: url(...)` | Base64 data URI in CSS |
-| **Fonts** | `@font-face { src: url(...) }` | Base64 data URI in CSS |
-| **Font Imports** | `<link href="fonts.googleapis.com">` or `@import url('fonts.googleapis.com')` | Inline `<style>` with embedded fonts |
+
+| Resource Type             | HTML Tags / CSS Properties                                                    | Output Format                        |
+| ------------------------- | ----------------------------------------------------------------------------- | ------------------------------------ |
+| **Stylesheets**           | `<link rel="stylesheet" href="...">`                                          | Inline`<style>` tags                 |
+| **JavaScript**            | `<script src="..."></script>`                                                 | Inline`<script>` tags                |
+| **Images**                | `<img src="...">`                                                             | Base64 data URI in`src` attribute    |
+| **SVG Images**            | `<image href="...">` (SVG element)                                            | Base64 data URI in`href` attribute   |
+| **Video Posters**         | `<video poster="...">`                                                        | Base64 data URI in`poster` attribute |
+| **Video Sources**         | `<source src="...">` (within `<video>`)                                       | Base64 data URI in`src` attribute    |
+| **Object Data**           | `<object data="...">`                                                         | Base64 data URI in`data` attribute   |
+| **Embed Sources**         | `<embed src="...">`                                                           | Base64 data URI in`src` attribute    |
+| **CSS Background Images** | `background-image: url(...)`                                                  | Base64 data URI in CSS               |
+| **Fonts**                 | `@font-face { src: url(...) }`                                                | Base64 data URI in CSS               |
+| **Font Imports**          | `<link href="fonts.googleapis.com">` or `@import url('fonts.googleapis.com')` | Inline`<style>` with embedded fonts  |
 
 ### Supported File Formats
 
@@ -62,6 +61,10 @@ import { asyncHtmlInline } from 'async-html-inline';
 - **Local files**: Relative or absolute file paths
 - **Remote URLs**: HTTP/HTTPS resources from any domain
 - **CDN resources**: Google Fonts, Bootstrap CDN, etc.
+
+
+[![Florian Walzel: What was design? Declarations and definitions from a century of creative quest](https://florianwalzel.com/wwd-hero-d.webp)](https://www.slanted.de/product/what-was-design/)
+
 
 ## Usage
 
@@ -107,41 +110,45 @@ You can selectively exclude specific resource types from being inlined by passin
 
 ### Available Exclusion Options
 
-| Option | Description | Excludes |
-|--------|-------------|----------|
-| `'stylesheets'` | Skip CSS stylesheets | `<link rel="stylesheet">`, `<style>` tags |
-| `'scripts'` | Skip JavaScript files | `<script src="...">` |
-| `'images'` | Skip all images | `<img>`, `<image>`, `<video poster>`, `<object>`, `<embed>`, CSS `background-image` |
-| `'videos'` | Skip video files | `<source src="...">` within `<video>` tags |
-| `'fonts'` | Skip font files | Font URLs in `@font-face`, Google Fonts, `@import` for fonts |
+
+| Option          | Description           | Excludes                                                                            |
+| --------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `'stylesheets'` | Skip CSS stylesheets  | `<link rel="stylesheet">`, `<style>` tags                                           |
+| `'scripts'`     | Skip JavaScript files | `<script src="...">`                                                                |
+| `'images'`      | Skip all images       | `<img>`, `<image>`, `<video poster>`, `<object>`, `<embed>`, CSS `background-image` |
+| `'videos'`      | Skip video files      | `<source src="...">` within `<video>` tags                                          |
+| `'fonts'`       | Skip font files       | Font URLs in`@font-face`, Google Fonts, `@import` for fonts                         |
 
 ### Examples
 
 Exclude stylesheets and scripts:
+
 ```javascript
 const ignore = ['stylesheets', 'scripts'];
 await asyncHtmlInline('input.html', 'output.html', ignore);
 ```
 
 Exclude only videos (useful for large video files):
+
 ```javascript
 const ignore = ['videos'];
 await asyncHtmlInline('input.html', 'output.html', ignore);
 ```
 
 Exclude fonts and videos:
+
 ```javascript
 const ignore = ['fonts', 'videos'];
 await asyncHtmlInline('input.html', 'output.html', ignore);
 ```
 
 Inline everything (default behavior):
+
 ```javascript
 await asyncHtmlInline('input.html', 'output.html');
 // or explicitly
 await asyncHtmlInline('input.html', 'output.html', []);
 ```
-
 
 ## CLI Usage
 
@@ -184,36 +191,41 @@ html-inline input.html output.html
 ### Examples
 
 Inline all resources:
+
 ```bash
 html-inline input.html output.html
 ```
 
 Ignore images from being inlined:
+
 ```bash
 html-inline input.html output.html --ignore-images
 ```
 
 Ignore videos (useful for large video files):
+
 ```bash
 html-inline input.html output.html --ignore-videos
 ```
 
 Ignore fonts (keep external font links):
+
 ```bash
 html-inline input.html output.html --ignore-fonts
 ```
 
 Ignore multiple resource types:
+
 ```bash
 html-inline input.html output.html --ignore-stylesheets --ignore-scripts
 html-inline input.html output.html --ignore-fonts --ignore-videos
 ```
 
 Display help:
+
 ```bash
 html-inline --help
 ```
-
 
 ## Example
 
