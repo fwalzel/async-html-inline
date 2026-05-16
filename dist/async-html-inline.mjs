@@ -597,7 +597,7 @@ class TransformStream extends stream.Transform {
                 if (response.status === 200) {
                     const contentType = response.headers['content-type'];
                     // Check if the content type indicates it's a font file
-                    if (contentType && (contentType.includes('font') || contentType.includes('woff') || contentType.includes('ttf') || contentType.includes('otf'))) {
+                    if (contentType && typeof contentType === 'string' && (contentType.includes('font') || contentType.includes('woff') || contentType.includes('ttf') || contentType.includes('otf'))) {
                         // Create data URI with proper MIME type from response headers
                         const prefix = `data:${contentType};base64,`;
                         return prefix + Buffer.from(response.data).toString('base64');
